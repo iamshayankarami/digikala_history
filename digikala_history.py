@@ -155,6 +155,12 @@ class ProcessThread(QThread):
         self.UI.output_general.setRowCount(len(all_orders))
         self.xData = []
         self.yData = []
+		#using sqlite3 to save all_datas of users without save thir username
+		with sql.connect('database.db') as conn:
+			c = conn.cursor()
+			c.execute("CREATE TABLE ALL_DATAS(date, name, num, price, discount")
+			c.executemany("INSERT INTO ALL_DATAS(?, ?, ?, ?, ?)", all_orders)
+			conn.commit()
 
         for date, name, num, price, discount in all_orders:
             this_purchase_str = "تاریخ %s:‌ %s عدد %s, به قیمت هر واحد %s\n" % (
@@ -255,6 +261,40 @@ def export_excel():
     sheet.insert_bitmap(imgfileName, n+2, 3)
     book.save(xlsfilename)
     os.remove(imgfileName)
+
+
+def get_all_datas_from_dataset():
+	return_data = []
+	with sql.connect("dataset.db") as conn:
+		c = conn.corsor()
+		c.execute("SELECT * FROM ALL_DATAS")
+		for row in c.fetchall():
+			return_data.append(row)
+	return return_data
+
+class Model(nn.Module):
+	def __init__(self, in_channle, out_channel, hidden_size):
+		super(Model, self).__init__()
+		self.i2h = nn.Linear(in_channle+hidden_size, hidden_size)
+		self.i2o = nn.Linear(in_channle+hidden_size, out_channle)
+		self.softmax = nn.LogSoftmax(dim=1)
+	def forward(self, input, hidden):
+		compimzer = torch.cat(input, hidden), 1)
+		hidden = self.i2h(compimzer)
+		output = self.i2o(compimzer)
+		output = self.softmax(output)
+		return output, hidden
+	def hidden_init(self):
+		return torch.zeros(1, self.hidden_size)
+#finish all works at next day, I LOVE CODING
+def train(dataset):
+	n_hidden = 128
+	rnn = Model(n_letters, n_category, n_hidden)
+	for data in dataset:
+		hidden = rnn.hiddeb_init()
+		rnn.zero_grad()
+
+		output, next_hidden = rnn(input[0], hidden)
 
 def get_data():
     window.PT = ProcessThread(window)
